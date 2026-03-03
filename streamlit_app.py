@@ -2,55 +2,54 @@ import streamlit as st
 import datetime
 from database_yawm import DATA_YAWM
 
-# 1. Konfigurasi Halaman
-st.set_page_config(page_title="What Message Today", page_icon="📖", layout="centered")
+# 1. Konfigurasi
+st.set_page_config(page_title="What Message Today", page_icon="📖")
 
-# 2. Judul & Header
 st.title("📖 What Message Today")
-st.write("Sistem Pemetaan Waktu Mandiri")
+st.write("Sistem Pemetaan Waktu: Sinkronisasi Tahunan")
 
-# 3. Input Tanggal (1990 - 2200)
-min_date, max_date = datetime.date(1990, 1, 1), datetime.date(2200, 12, 31)
-target_date = st.date_input("Pilih Tanggal:", datetime.date.today(), min_value=min_date, max_value=max_date, format="DD/MM/YYYY")
+# 2. Input Tanggal
+target_date = st.date_input("Pilih Tanggal:", datetime.date.today(), format="DD/MM/YYYY")
 
-# 4. Logika Perhitungan
-hari_ke_total = (target_date - min_date).days + 1
-hari_ke_tahunan = (target_date - datetime.date(target_date.year, 1, 1)).days + 1
-indeks = hari_ke_total % 365 or 365
+# 3. LOGIKA PEMBENAHAN: Sinkronisasi Hari ke-X dalam Tahun
+# Menghitung hari ke berapa tanggal tersebut dalam tahun yang dipilih
+awal_tahun = datetime.date(target_date.year, 1, 1)
+hari_ke_tahunan = (target_date - awal_tahun).days + 1
+
+# Index Yawm sekarang mengikuti hari ke-x dalam tahun tersebut
+# Jika hari ke-366 (Kabisat), kita arahkan kembali ke 365 atau pesan khusus
+indeks = hari_ke_tahunan
+if indeks > 365: indeks = 365 
 
 st.divider()
 
-# 5. Dashboard Metrik
-c1, c2, c3 = st.columns(3)
-c1.metric("Total Hari", f"{hari_ke_total:,}")
-c2.metric(f"Hari di {target_date.year}", hari_ke_tahunan)
-c3.metric("Index Yawm", indeks)
+# 4. Dashboard Metrik
+c1, c2 = st.columns(2)
+with c1:
+    st.metric(f"Hari di {target_date.year}", hari_ke_tahunan)
+with c2:
+    st.metric("Index Pesan", indeks)
 
-# 6. Penampilan Data Qur'an
+# 5. Penampilan Pesan Berdasarkan Indeks Tahunan
 if indeks in DATA_YAWM:
-    # Mengantisipasi jika nanti Anda menambah kolom di database_yawm.py
     data = DATA_YAWM[indeks]
     surah, no, ayat, pesan = data[0], data[1], data[2], data[3]
     
     st.subheader(f"📅 {target_date.strftime('%d %B %Y')}")
-    
-    # Header Surah & Ayat
     st.markdown(f"### 📍 {surah} ({no}:{ayat})")
     
-    # Slot untuk Teks Arab (Jika sudah Anda tambahkan di database)
+    # Tampilkan Arab (Jika ada)
     if len(data) > 4:
-        st.markdown(f"<p style='text-align: right; font-size: 28px; font-family: sans-serif;'>{data[4]}</p>", unsafe_allow_html=True)
+        st.markdown(f"<div style='direction: rtl; text-align: right; font-size: 28px;'>{data[4]}</div>", unsafe_allow_html=True)
 
-    # Box Pesan Intisari (Visual yang sudah diperkecil)
-    st.markdown(f"""
-        <div style="background-color: #1e2130; padding: 15px; border-left: 5px solid #ff4b4b; border-radius: 8px;">
-            <p style="color: white; font-style: italic; font-size: 18px; margin: 0;">"{pesan}"</p>
-        </div>
-    """, unsafe_allow_html=True)
+    # Box Pesan
+    st.info(f'"{pesan}"')
     
-    # Slot untuk Terjemahan Lengkap (Jika sudah Anda tambahkan di database)
+    # Terjemahan (Jika ada)
     if len(data) > 5:
-        st.caption(f"**Terjemahan:** {data[5]}")
+        st.write(data[5])
+else:
+    st.error(f"Data untuk hari ke-{indeks} belum tersedia di database.")
 
 st.divider()
-st.caption("Operator Mode: Active | Standalone Database System")
+st.caption("Sistem Konsisten: Pesan mengikuti urutan hari tahunan (1-365).")
