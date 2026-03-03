@@ -52,13 +52,22 @@ st.subheader(f"📅 Hasil Sinkronisasi: {target_date.strftime('%d %B %Y')}")
 if indeks in DATA_YAWM:
     surah, no, ayat, pesan = DATA_YAWM[indeks]
     st.info(f"📍 **Surah {surah} (Ayat {no}:{ayat})**")
+    # Ganti bagian blok penampilan pesan (Nomor 6 di kode sebelumnya) dengan ini:
+if indeks in DATA_YAWM:
+    surah, no, ayat, pesan = DATA_YAWM[indeks]
+    
+    # Box Informasi Surah yang lebih compact
+    st.info(f"📍 **Surah {surah} (Ayat {no}:{ayat})**")
+    
+    # Styling Pesan: Font diperkecil (h4) dan padding dikurangi agar tidak "raksasa" di HP
     st.markdown(f"""
-        <div style="background-color: #1e2130; padding: 25px; border-left: 8px solid #ff4b4b; border-radius: 10px; margin-top: 10px;">
-            <h2 style="color: white; font-family: 'serif'; font-style: italic; line-height: 1.5;">
+        <div style="background-color: #1e2130; padding: 15px; border-left: 5px solid #ff4b4b; border-radius: 8px; margin-top: 5px;">
+            <h4 style="color: white; font-family: 'serif'; font-style: italic; line-height: 1.4; margin: 0;">
                 "{pesan}"
-            </h2>
+            </h4>
         </div>
     """, unsafe_allow_html=True)
+
 
 st.divider()
 st.caption(f"Operator Mode: Active | Memetakan Hari ke-{hari_ke_tahunan} pada tahun {target_date.year}")
