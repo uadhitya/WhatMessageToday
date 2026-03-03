@@ -1,69 +1,62 @@
 import streamlit as st
-import datetime
-from database_yawm import DATA_YAWM
+from datetime import datetime
 
-# 1. Konfigurasi Halaman
-st.set_page_config(page_title="What Message Today", page_icon="📖", layout="centered")
+# Fungsi Inti Navigasi Transversal
+def get_matrix_indices(current_index):
+    points = [-120, -80, -40, 0, 40, 80, 120]
+    matrix = []
+    for p in points:
+        # Logika Modulo 365 untuk sirkulasi tahunan
+        idx = (current_index + p) % 365
+        if idx <= 0: idx += 365
+        matrix.append(idx)
+    return matrix
 
-st.title("📖 What Message Today")
-st.write("Sistem Pemetaan Waktu Universal (1900 - 2200)")
+# Simulasi Input Tanggal
+target_date = st.date_input("Masukkan Tanggal Audit", value=datetime(1992, 4, 6))
 
-# 2. Pengaturan Rentang Kalender Luas (Mendukung tahun 1945)
-min_date = datetime.date(1900, 1, 1)
-max_date = datetime.date(2200, 12, 31)
-today = datetime.date.today()
+# Normalisasi Indeks (Menangani Kabisat agar tetap dalam range 1-365)
+raw_index = target_date.timetuple().tm_yday
+current_index = 365 if raw_index > 365 else raw_index
 
-target_date = st.date_input(
-    "Pilih Tanggal Lahir atau Peristiwa:", 
-    value=today,
-    min_value=min_date,
-    max_value=max_date,
-    format="DD/MM/YYYY"
-)
+# Jalankan Matrix
+matrix_indices = get_matrix_indices(current_index)
+labels = ["-120d", "-80d", "-40d", "NOW", "+40d", "+80d", "+120d"]
+status_labels = ["Seed", "Incubation", "Trigger", "OPERATOR", "Reaction", "Stable", "Outcome"]
 
-# 3. LOGIKA KONSISTEN: Mengambil urutan hari dalam tahun (1-366)
-# Ini memastikan 17 Agustus 1945 dan 17 Agustus 2026 punya basis pesan yang sinkron
-indeks = target_date.timetuple().tm_yday
+# --- TAMPILAN DASHBOARD ---
+st.title("🛡️ Operator Command Center")
+st.subheader(f"System Audit: {target_date.strftime('%d/%m/%Y')} (Index {current_index})")
 
-# Penyesuaian untuk database yang hanya 365 hari (menangani hari ke-366/kabisat)
-indeks_pesan = indeks
-if indeks_pesan > 365:
-    indeks_pesan = 365
-
-st.divider()
-
-# 4. Tampilan Metrik
-col1, col2 = st.columns(2)
-with col1:
-    st.metric(f"Hari ke- (di tahun {target_date.year})", indeks)
-with col2:
-    st.metric("Index Pesan", indeks_pesan)
-
-# 5. Output Pesan Al-Qur'an
-st.subheader(f"📅 Peristiwa: {target_date.strftime('%d %B %Y')}")
-
-if indeks_pesan in DATA_YAWM:
-    data = DATA_YAWM[indeks_pesan]
-    surah, no, ayat, pesan = data[0], data[1], data[2], data[3]
-    
-    st.info(f"📍 **Surah {surah} ({no}:{ayat})**")
-    
-    # Tampilan Arab (Jika ada di database)
-    if len(data) > 4:
-        st.markdown(f"<div style='direction: rtl; text-align: right; font-size: 28px; padding: 10px;'>{data[4]}</div>", unsafe_allow_html=True)
-
-    # Box Intisari Pesan
-    st.markdown(f"""
-        <div style="background-color: #1e2130; padding: 15px; border-left: 5px solid #ff4b4b; border-radius: 8px;">
-            <p style="color: white; font-style: italic; font-size: 18px; margin: 0;">"{pesan}"</p>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # Terjemahan Lengkap (Jika ada)
-    if len(data) > 5:
-        st.write(f"**Terjemahan:** {data[5]}")
-else:
-    st.warning(f"Data Indeks {indeks_pesan} belum tersedia.")
+# Grid Navigasi 7-Titik
+cols = st.columns(7)
+for i, col in enumerate(cols):
+    with col:
+        is_now = (i == 3)
+        st.markdown(f"**{labels[i]}**")
+        st.metric(status_labels[i], f"Idx {matrix_indices[i]}", 
+                  delta="Focus" if is_now else None, delta_color="inverse")
 
 st.divider()
-st.caption("Operator: Active | Sistem Sinkronisasi Kalender Tahunan")
+
+# Menampilkan Detail Hubungan Sebab-Akibat
+col_retro, col_focus, col_proyeksi = st.columns([1, 2, 1])
+
+with col_retro:
+    st.write("🔍 **Akar (-40d)**")
+    idx_retro = matrix_indices[2]
+    if idx_retro in DATA_YAWM:
+        st.caption(f"Index {idx_retro}: {DATA_YAWM[idx_retro][3][:50]}...")
+
+with col_focus:
+    st.info(f"📍 **Pesan Utama (Index {current_index})**")
+    if current_index in DATA_YAWM:
+        surah, no, ayat, pesan = DATA_YAWM[current_index][0:4]
+        st.markdown(f"### {surah} {no}:{ayat}")
+        st.write(f"**{pesan}**")
+
+with col_proyeksi:
+    st.write("🚀 **Dampak (+40d)**")
+    idx_future = matrix_indices[4]
+    if idx_future in DATA_YAWM:
+        st.caption(f"Index {idx_future}: {DATA_YAWM[idx_future][3][:50]}...")
