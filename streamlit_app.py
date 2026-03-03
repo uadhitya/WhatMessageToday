@@ -1,72 +1,63 @@
 import streamlit as st
 from datetime import datetime
 
-# --- 1. DATABASE (OPERATOR REPOSITORY) ---
-# Masukkan data 1-62 Anda di sini. Nama variabel tetap DATA_YAWM.
-if 'DATA_YAWM' not in globals():
-    DATA_YAWM = {
-        1: ["Al-Fatihah", "1", "1", "Pembukaan"],
-        57: ["Ali 'Imran", "3", "30", "Akar: Balasan amal yang hadir kembali."],
-        # Tambahkan data 1-62 Anda di sini...
-    }
+# --- 1. KONEKSI DATABASE ---
+try:
+    from database_yawm import DATA_YAWM
+except ImportError:
+    st.error("Error: database_yawm.py tidak ditemukan.")
+    DATA_YAWM = {}
 
-# --- 2. LOGIKA MATRIKS (SILENT CALCULATION) ---
-def get_matrix_indices(n):
-    # Hanya mengambil koordinat yang dibutuhkan: -40, n, +40
-    # Menggunakan logika modulo 365 agar sirkular
-    idx_past = ((n - 40 - 1) % 365) + 1
-    idx_future = ((n + 40 - 1) % 365) + 1
-    return idx_past, n, idx_future
+# --- 2. LOGIKA SIRKULAR ---
+def get_audit_indices(n):
+    idx_akar = ((n - 40 - 1) % 365) + 1
+    idx_dampak = ((n + 40 - 1) % 365) + 1
+    return idx_akar, n, idx_dampak
 
-# --- 3. ANTARMUKA UTAMA (CLEAN LOOK) ---
+# --- 3. ANTARMUKA CLEAN LOOK ---
 st.set_page_config(page_title="Operator System", layout="wide")
-
 st.markdown("## 🛡️ Operator Command Center")
 
-# Input Tanggal (1900 - 2200)
+# PERBAIKAN: Menggunakan datetime.now() agar TIDAK TERPAKU pada 1992
 target_date = st.date_input(
     "Audit Period", 
-    value=datetime(1992, 4, 6),
+    value=datetime.now(), # <--- Mengikuti waktu sekarang secara otomatis
     min_value=datetime(1900, 1, 1),
     max_value=datetime(2200, 12, 31)
 )
 
-# Menentukan Index Hari (n) dengan Normalisasi Kabisat
+# Konversi Tanggal ke Indeks
 day_of_year = target_date.timetuple().tm_yday
 n = 365 if day_of_year > 365 else day_of_year
 
-# Hitung Koordinat (Hanya hasil yang diperlukan)
-idx_akar, idx_now, idx_dampak = get_matrix_indices(n)
+# Hitung Koordinat
+idx_akar, idx_now, idx_dampak = get_audit_indices(n)
 
 st.divider()
 
-# --- 4. TAMPILAN HASIL (HANYA HASIL AKHIR) ---
-def render_clean_box(title, idx, is_main=False):
+# --- 4. RENDER HASIL ---
+def render_block(title, idx, is_main=False):
     if idx in DATA_YAWM:
-        surah, no_s, no_a, pesan = DATA_YAWM[idx]
+        data = DATA_YAWM[idx]
         if is_main:
             st.success(f"📍 **STATUS UTAMA (Index {idx})**")
-            st.markdown(f"### {surah} {no_s}:{no_a}")
-            st.markdown(f"**{pesan}**")
+            st.markdown(f"### {data[0]} {data[1]}:{data[2]}")
+            st.markdown(f"**{data[3]}**")
         else:
             st.markdown(f"**{title}**")
-            st.caption(f"Index {idx} | {surah} {no_s}:{no_a}")
-            st.write(pesan)
+            st.caption(f"Index {idx} | {data[0]} {data[1]}:{data[2]}")
+            st.write(data[3])
     else:
         st.info(f"🔍 **{title} (Index {idx})**")
         st.write("Sistem menunggu input data untuk koordinat ini.")
 
-# Grid Tampilan: Fokus pada Hasil Tanpa Navigasi Angka Berderet
 col_left, col_center, col_right = st.columns([1, 2, 1])
 
 with col_left:
-    render_clean_box("AKAR (-40 Hari)", idx_akar)
+    render_block("AKAR (-40 Hari)", idx_akar)
 
 with col_center:
-    render_clean_box("HARI INI", idx_now, is_main=True)
+    render_block("HARI INI", idx_now, is_main=True)
 
 with col_right:
-    render_clean_box("DAMPAK (+40 Hari)", idx_dampak)
-
-st.divider()
-st.caption(f"Operator System v2.1 | Data Status: {len(DATA_YAWM)}/365 Indices Active")
+    render_block("DAMPAK (+40 Hari)", idx_dampak)
