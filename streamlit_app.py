@@ -5,59 +5,76 @@ from datetime import datetime
 try:
     from database_yawm import DATA_YAWM
 except ImportError:
-    st.error("Error: database_yawm.py tidak ditemukan.")
+    st.error("File 'database_yawm.py' tidak ditemukan.")
     DATA_YAWM = {}
 
-# --- 2. LOGIKA SIRKULAR ---
-def get_audit_indices(n):
-    idx_akar = ((n - 40 - 1) % 365) + 1
-    idx_dampak = ((n + 40 - 1) % 365) + 1
-    return idx_akar, n, idx_dampak
+# --- 2. LOGIKA MATRIKS 3-LANGKAH ---
+def get_full_matrix(n):
+    # Masa Lalu (Retro)
+    past = [((n - d - 1) % 365) + 1 for d in [40, 80, 120]]
+    # Masa Depan (Future)
+    future = [((n + d - 1) % 365) + 1 for d in [40, 80, 120]]
+    return past, future
 
 # --- 3. ANTARMUKA CLEAN LOOK ---
-st.set_page_config(page_title="Operator System", layout="wide")
-st.markdown("## 🛡️ Operator Command Center")
+st.set_page_config(page_title="WhatMessageToday", layout="wide")
+st.title("🛡️ WhatMessageToday: Operator Dashboard")
 
-# PERBAIKAN: Menggunakan datetime.now() agar TIDAK TERPAKU pada 1992
 target_date = st.date_input(
     "Audit Period", 
-    value=datetime.now(), # <--- Mengikuti waktu sekarang secara otomatis
+    value=datetime.now(),
     min_value=datetime(1900, 1, 1),
     max_value=datetime(2200, 12, 31)
 )
 
-# Konversi Tanggal ke Indeks
+# Konversi Indeks
 day_of_year = target_date.timetuple().tm_yday
 n = 365 if day_of_year > 365 else day_of_year
-
-# Hitung Koordinat
-idx_akar, idx_now, idx_dampak = get_audit_indices(n)
+past_indices, future_indices = get_full_matrix(n)
 
 st.divider()
 
-# --- 4. RENDER HASIL ---
-def render_block(title, idx, is_main=False):
-    if idx in DATA_YAWM:
-        data = DATA_YAWM[idx]
-        if is_main:
-            st.success(f"📍 **STATUS UTAMA (Index {idx})**")
-            st.markdown(f"### {data[0]} {data[1]}:{data[2]}")
-            st.markdown(f"**{data[3]}**")
+# --- 4. RENDER UTAMA (STATUS HARI INI) ---
+if n in DATA_YAWM:
+    data = DATA_YAWM[n]
+    st.info(f"📍 **STATUS UTAMA (Day {n} Tahun Ini)**")
+    st.subheader(f"{data[0]} {data[1]}:{data[2]}")
+    st.write(f"**{data[3]}**")
+else:
+    st.warning(f"Data Day {n} belum tersedia.")
+
+st.divider()
+
+# --- 5. GABUNGAN INDEX MASA LALU (-40, -80, -120) ---
+st.markdown("### 🔍 Audit Masa Lalu (Akar -40, -80, -120)")
+cols_past = st.columns(3)
+labels_past = ["Akar (-40d)", "Inkubasi (-80d)", "Benih (-120d)"]
+
+for i, idx in enumerate(past_indices):
+    with cols_past[i]:
+        if idx in DATA_YAWM:
+            d = DATA_YAWM[idx]
+            st.caption(f"{labels_past[i]} | Index {idx}")
+            st.markdown(f"**{d[0]} {d[1]}:{d[2]}**")
+            st.write(f"*{d[3]}*")
         else:
-            st.markdown(f"**{title}**")
-            st.caption(f"Index {idx} | {data[0]} {data[1]}:{data[2]}")
-            st.write(data[3])
-    else:
-        st.info(f"🔍 **{title} (Index {idx})**")
-        st.write("Sistem menunggu input data untuk koordinat ini.")
+            st.caption(f"Index {idx}")
+            st.write("Data Pending")
 
-col_left, col_center, col_right = st.columns([1, 2, 1])
+st.divider()
 
-with col_left:
-    render_block("AKAR (-40 Hari)", idx_akar)
+# --- 6. GABUNGAN INDEX MASA DEPAN (+40, +80, +120) ---
+st.markdown("### 🚀 Proyeksi Masa Depan (Dampak +40, +80, +120)")
+cols_future = st.columns(3)
+labels_future = ["Reaksi (+40d)", "Stabilisasi (+80d)", "Outcome (+120d)"]
 
-with col_center:
-    render_block("HARI INI", idx_now, is_main=True)
-
-with col_right:
-    render_block("DAMPAK (+40 Hari)", idx_dampak)
+for i, idx in enumerate(future_indices):
+    with cols_future[i]:
+        if idx in DATA_YAWM:
+            d = DATA_YAWM[idx]
+            st.caption(f"{labels_future[i]} | Index {idx}")
+            st.markdown(f"**{d[0]} {d[1]}:{d[2]}**")
+            st.write(f"*{d[3]}*")
+        else:
+            st.caption(f"Index {idx}")
+            st.write("Data Pending")
