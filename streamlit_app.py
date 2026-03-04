@@ -1,7 +1,7 @@
 import streamlit as st
 from datetime import datetime
 
-# --- 1. LOGIKA INTI (TIDAK BOLEH BERUBAH) ---
+# --- 1. DATA INTEGRITY ---
 try:
     from database_yawm import DATA_YAWM
 except:
@@ -9,70 +9,43 @@ except:
 
 def get_indices(n):
     sebab = [((n - d - 1) % 365) + 1 for d in [120, 80, 40]]
-    perbaikan = [((n + d - 1) % 365) + 1 for d in [40, 80, 120]]
-    return sebab, perbaikan
+    petunjuk = [((n + d - 1) % 365) + 1 for d in [40, 80, 120]]
+    return sebab, petunjuk
 
-# --- 2. KREASI VISUAL (INDUSTRIAL DASHBOARD) ---
+# --- 2. CSS FINAL (CLEAN INDUSTRIAL) ---
 st.set_page_config(page_title="WhatMessageToday", layout="wide")
 st.markdown("""
     <style>
-    /* Latar Belakang & Font Base */
-    .stApp { background-color: #0b0e14; color: #c9d1d9; }
-    
-    /* Header Container */
-    .header-container {
+    .stApp { background-color: #0b0e14; }
+    .main-title { color: #ffffff; font-size: 2.5rem; font-weight: 800; margin-bottom: 20px; }
+    .header-card {
         background: linear-gradient(90deg, #161b22 0%, #0b0e14 100%);
-        padding: 30px;
-        border-radius: 0 0 15px 15px;
-        border-bottom: 2px solid #3b82f6;
-        margin-bottom: 40px;
-    }
-    .day-num { color: #ffffff; font-size: 4rem; font-weight: 900; line-height: 1; text-shadow: 2px 2px #000; }
-    .year-tag { color: #3b82f6; font-size: 1.2rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; }
-
-    /* Card Styling */
-    .glass-card {
-        background: rgba(22, 27, 34, 0.8);
-        border: 1px solid #30363d;
-        border-radius: 12px;
         padding: 25px;
-        transition: transform 0.2s, border 0.2s;
+        border-radius: 12px;
+        border-bottom: 2px solid #3b82f6;
+        margin-bottom: 30px;
     }
-    .glass-card:hover { border-color: #3b82f6; }
+    .day-num { color: #ffffff; font-size: 3.5rem; font-weight: 900; line-height: 1; }
+    .year-tag { color: #3b82f6; font-size: 1rem; font-weight: 700; letter-spacing: 2px; }
 
-    /* Typography */
-    .ref-label { 
-        color: #f59e0b; /* Amber untuk Identitas */
-        font-family: 'Courier New', monospace;
-        font-weight: 700; 
-        font-size: 0.9rem; 
-        margin-bottom: 12px;
-        display: block;
-    }
-    .message-body { 
-        color: #e6edf3; 
-        font-size: 1.3rem; 
-        line-height: 1.6; 
-        font-weight: 400;
-    }
-    
-    /* Section Labels */
-    .status-tag {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 800;
-        text-transform: uppercase;
+    .msg-card {
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        padding: 20px;
         margin-bottom: 15px;
     }
-    .tag-sebab { background-color: #442a2a; color: #ff7b72; border: 1px solid #6e3636; }
-    .tag-perbaikan { background-color: #233329; color: #7ee787; border: 1px solid #2ea043; }
+    .ref-id { color: #f59e0b; font-family: monospace; font-weight: bold; font-size: 1rem; }
+    .message-text { color: #e6edf3; font-size: 1.2rem; line-height: 1.6; margin-top: 10px; }
+    
+    .label-sebab { color: #ff7b72; font-weight: bold; text-transform: uppercase; font-size: 0.9rem; margin: 20px 0 10px 0; }
+    .label-petunjuk { color: #7ee787; font-weight: bold; text-transform: uppercase; font-size: 0.9rem; margin: 20px 0 10px 0; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. INPUT (PARAMETER HARGA MATI) ---
-# Saya tetap mengunci 1900-2200 di sini.
+# --- 3. JUDUL & INPUT (POSISI UTAMA) ---
+st.markdown("<div class='main-title'>WhatMessageToday</div>", unsafe_allow_html=True)
+
 target_date = st.date_input(
     "OPERATIONAL DATE AUDIT", 
     value=datetime.now(),
@@ -82,51 +55,49 @@ target_date = st.date_input(
 
 day_of_year = target_date.timetuple().tm_yday
 n = 365 if day_of_year > 365 else day_of_year
-tahun_audit = target_date.year
-sebab_idx, perbaikan_idx = get_indices(n)
+sebab_idx, petunjuk_idx = get_indices(n)
 
-# --- 4. RENDER HEADER ---
+# --- 4. HEADER CHRONOLOGY ---
 st.markdown(f"""
-    <div class='header-container'>
-        <div class='year-tag'>System Chronology {tahun_audit}</div>
+    <div class='header-card'>
+        <div class='year-tag'>SYSTEM CHRONOLOGY {target_date.year}</div>
         <div class='day-num'>DAY {n}</div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- 5. RENDER DATA UTAMA ---
+# --- 5. DATA DISPLAY ---
 if n in DATA_YAWM:
     d = DATA_YAWM[n]
     st.markdown(f"""
-        <div class='glass-card' style='border-left: 5px solid #3b82f6;'>
-            <span class='ref-label'>ID: {d[0]} {d[1]}:{d[2]}</span>
-            <div class='message-body'>{d[-1]}</div>
+        <div class='msg-card' style='border-left: 4px solid #3b82f6;'>
+            <span class='ref-id'>ID: {d[0]} {d[1]}:{d[2]}</span>
+            <div class='message-text'><i><b>"{d[-1]}"</b></i></div>
         </div>
         """, unsafe_allow_html=True)
 
-# --- 6. TAFSIR DENGAN AKSI WARNA ---
-st.write("")
-col_sebab, col_perbaikan = st.columns(2)
+# --- 6. TAFSIR SECTION ---
+col1, col2 = st.columns(2)
 
-with col_sebab:
-    st.markdown("<div class='status-tag tag-sebab'>Tafsir Sebab (-120, -80, -40)</div>", unsafe_allow_html=True)
+with col1:
+    st.markdown("<div class='label-sebab'>TAFSIR SEBAB</div>", unsafe_allow_html=True)
     for idx in sebab_idx:
         if idx in DATA_YAWM:
             v = DATA_YAWM[idx]
             st.markdown(f"""
-                <div class='glass-card' style='margin-bottom:10px;'>
-                    <span class='ref-label'>{v[0]} {v[1]}:{v[2]}</span>
-                    <div class='message-body' style='font-size:1rem;'>{v[-1]}</div>
+                <div class='msg-card'>
+                    <span class='ref-id' style='font-size:0.85rem;'>{v[0]} {v[1]}:{v[2]}</span>
+                    <div class='message-text' style='font-size:1rem;'><i>"{v[-1]}"</i></div>
                 </div>
                 """, unsafe_allow_html=True)
 
-with col_perbaikan:
-    st.markdown("<div class='status-tag tag-perbaikan'>Tafsir Perbaikan (+40, +80, +120)</div>", unsafe_allow_html=True)
-    for idx in perbaikan_idx:
+with col2:
+    st.markdown("<div class='label-petunjuk'>TAFSIR PETUNJUK</div>", unsafe_allow_html=True)
+    for idx in petunjuk_idx:
         if idx in DATA_YAWM:
             v = DATA_YAWM[idx]
             st.markdown(f"""
-                <div class='glass-card' style='margin-bottom:10px;'>
-                    <span class='ref-label'>{v[0]} {v[1]}:{v[2]}</span>
-                    <div class='message-body' style='font-size:1rem;'>{v[-1]}</div>
+                <div class='msg-card'>
+                    <span class='ref-id' style='font-size:0.85rem;'>{v[0]} {v[1]}:{v[2]}</span>
+                    <div class='message-text' style='font-size:1rem;'><i>"{v[-1]}"</i></div>
                 </div>
                 """, unsafe_allow_html=True)
